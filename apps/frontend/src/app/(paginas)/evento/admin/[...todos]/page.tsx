@@ -2,17 +2,17 @@
 
 import DashboardEvento from "@/components/evento/DashboardEvento";
 import FormSenhaEvento from "@/components/evento/FormSenhaEvento";
+import useAPI from "@/data/hooks/useAPI";
 import { Convidado, Evento, eventos } from "core";
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 
-export default function PaginaAdminEvento(props: {
-  params: Promise<{ todos: string[] }>;
-}) {
-  const params = use(props.params);
+export default function PaginaAdminEvento(props: any) {
+  const { httpPost } = useAPI();
+  const params: any = use(props.params);
 
   const id = params.todos[0];
   const [evento, setEvento] = useState<Evento | null>(null);
-  const [senha, setSenha] = useState<string | null>(params.todos[1] ?? null);
+  const [senha, setSenha] = useState<string>(params.todos[1] ?? "");
 
   const presentes = evento?.convidados.filter((c) => c.confirmado) ?? [];
   const ausentes = evento?.convidados.filter((c) => !c.confirmado) ?? [];
@@ -22,6 +22,12 @@ export default function PaginaAdminEvento(props: {
       return total + convidado.qtdeAcompanhantes + 1;
     }, 0) ?? 0;
 
+  const obterEvento = useCallback(async () => {
+    if (!id || !senha) return;
+    const evento = await httpPost("/eventos/acessar", { id, senha });
+    setEvento(evento);
+  }, [httpPost, id, senha]);
+
   useEffect(() => {
     function carregarEvento() {
       const evento = eventos.find((ev) => ev.id === id && ev.senha === senha);
@@ -29,6 +35,7 @@ export default function PaginaAdminEvento(props: {
     }
     carregarEvento();
   }, [id, senha]);
+
 
   return (
     <div className="flex flex-col items-center">
@@ -38,9 +45,14 @@ export default function PaginaAdminEvento(props: {
           presentes={presentes}
           ausentes={ausentes}
           totalGeral={totalGeral}
+          atualizarListaConvidados={obterEvento}
         />
       ) : (
-        <FormSenhaEvento />
+        <FormSenhaEvento
+          acessarEvento={obterEvento}
+          senha={senha}
+          setSenha={setSenha}
+        />
       )}
     </div>
   );

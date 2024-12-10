@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   Body,
   Controller,
@@ -12,7 +13,6 @@ import {
   Convidado,
   Data,
   Evento,
-  eventos,
   Id,
 } from 'core';
 import { EventoPrisma } from './evento.prisma';
@@ -26,11 +26,12 @@ export class EventosController {
     const eventoCadastrado = await this.repo.buscarPorAlias(evento.alias);
 
     if (eventoCadastrado && eventoCadastrado.id !== evento.id) {
-      throw new Error('Já existe um evento com esse alias.');
+      throw new HttpException('Já existe um evento com esse alias.', 400);
     }
 
     const eventoCompleto = complementarEvento(this.deserializar(evento));
     await this.repo.salvar(eventoCompleto);
+    return this.serializar(eventoCompleto);
   }
 
   @Post(':alias/convidado')
@@ -41,23 +42,23 @@ export class EventosController {
     const evento = await this.repo.buscarPorAlias(alias);
 
     if (!evento) {
-      throw new Error('Evento não encontrado');
+      throw new HttpException('Evento não encontrado.', 400);
     }
 
     const convidadoCompleto = complementarConvidado(convidado);
-
     await this.repo.salvarConvidado(evento, convidadoCompleto);
   }
 
   @Post('acessar')
   async acessarEvento(@Body() dados: { id: string; senha: string }) {
-    const evento = await this.repo.buscarPorId(dados.id);
+    const evento = await this.repo.buscarPorId(dados.id, true);
 
     if (!evento) {
-      throw new HttpException('Evento não encontrado', 400);
+      throw new HttpException('Evento não encontrado.', 400);
     }
+
     if (evento.senha !== dados.senha) {
-      throw new HttpException('Senha não corresponde ao evento', 400);
+      throw new HttpException('Senha não corresponde ao evento.', 400);
     }
 
     return this.serializar(evento);
@@ -80,10 +81,9 @@ export class EventosController {
     return this.serializar(evento);
   }
 
-  @Get('/validar/:alias/:id')
+  @Get('validar/:alias/:id')
   async validarAlias(@Param('alias') alias: string, @Param('id') id: string) {
     const evento = await this.repo.buscarPorAlias(alias);
-
     return { valido: !evento || evento.id === id };
   }
 
@@ -100,6 +100,6 @@ export class EventosController {
     return {
       ...evento,
       data: Data.desformatar(evento.data),
-    };
+    } as Evento;
   }
 }

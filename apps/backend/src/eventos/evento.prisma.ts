@@ -9,9 +9,9 @@ export class EventoPrisma {
   salvar(evento: Evento) {
     return this.prisma.evento.create({
       data: {
-        ...evento as any,
-        convidados: {create: evento.convidados}
-      }
+        ...(evento as any),
+        convidados: { create: evento.convidados },
+      },
     });
   }
 
@@ -44,19 +44,19 @@ export class EventoPrisma {
     completo: boolean = false,
   ): Promise<Evento | null> {
     return this.prisma.evento.findUnique({
-        select: {
+      select: {
         id: true,
-        alias: true,
         nome: true,
+        descricao: true,
         data: true,
         local: true,
-        descricao:true, 
-        senha: completo,
         imagem: true,
-        imagemBackground: true, 
+        imagemBackground: true,
+        alias: true,
+        senha: completo,
         publicoEsperado: completo,
         convidados: completo,
-        },
+      },
       where: { alias },
     }) as any;
   }
